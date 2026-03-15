@@ -14,7 +14,10 @@ class AddColomnInCompanySettingsTable extends Migration
     public function up()
     {
         Schema::table('company_settings', function (Blueprint $table) {
-            $table->text('meta_details')->after('show_review_modal');
+            $column = $table->text('meta_details')->nullable();
+            if (Schema::getConnection()->getDriverName() === 'mysql') {
+                $column->after('show_review_modal');
+            }
         });
     }
 
