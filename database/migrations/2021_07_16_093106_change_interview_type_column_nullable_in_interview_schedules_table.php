@@ -14,10 +14,13 @@ class ChangeInterviewTypeColumnNullableInInterviewSchedulesTable extends Migrati
      */
     public function up()
     {
-        Schema::table('interview_schedules', function (Blueprint $table) {
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
             DB::statement('ALTER TABLE `interview_schedules` CHANGE `interview_type` `interview_type` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL;');
-
-        });
+        } else {
+            Schema::table('interview_schedules', function (Blueprint $table) {
+                $table->text('interview_type')->nullable()->change();
+            });
+        }
     }
 
     /**
@@ -27,8 +30,12 @@ class ChangeInterviewTypeColumnNullableInInterviewSchedulesTable extends Migrati
      */
     public function down()
     {
-        Schema::table('interview_schedules', function (Blueprint $table) {
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
             DB::statement('ALTER TABLE `interview_schedules` CHANGE `interview_type` `interview_type` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL;');
-        });
+        } else {
+            Schema::table('interview_schedules', function (Blueprint $table) {
+                $table->text('interview_type')->nullable(false)->change();
+            });
+        }
     }
 }

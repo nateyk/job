@@ -11,6 +11,9 @@ class AlterOnboardStatusTable extends Migration
      */
     public function up()
     {
+        if (\Illuminate\Support\Facades\Schema::getConnection()->getDriverName() !== 'mysql') {
+            return;
+        }
         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `on_board_details` CHANGE `hired_status` `hired_status` ENUM('offered','accepted','rejected','canceled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;");
     }
 

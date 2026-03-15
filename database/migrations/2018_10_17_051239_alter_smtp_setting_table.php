@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Schema;
 
 class AlterSmtpSettingTable extends Migration {
 
@@ -12,6 +13,9 @@ class AlterSmtpSettingTable extends Migration {
 	 */
 	public function up()
 	{
+        if (Schema::getConnection()->getDriverName() !== 'mysql') {
+            return;
+        }
         DB::statement("ALTER TABLE `smtp_settings` CHANGE `mail_encryption` `mail_encryption` ENUM('tls','ssl') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL;");
     }
 

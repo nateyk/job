@@ -14,7 +14,13 @@ class ChangeCoverLetterColumnNullableJobApplicationsTable extends Migration
      */
     public function up()
     {
-        DB::statement('ALTER TABLE `job_applications` CHANGE `cover_letter` `cover_letter` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL;');
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `job_applications` CHANGE `cover_letter` `cover_letter` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL;');
+        } else {
+            Schema::table('job_applications', function (Blueprint $table) {
+                $table->text('cover_letter')->nullable()->change();
+            });
+        }
     }
 
     /**
@@ -24,6 +30,12 @@ class ChangeCoverLetterColumnNullableJobApplicationsTable extends Migration
      */
     public function down()
     {
-        DB::statement('ALTER TABLE `job_applications` CHANGE `cover_letter` `cover_letter` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;');
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `job_applications` CHANGE `cover_letter` `cover_letter` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;');
+        } else {
+            Schema::table('job_applications', function (Blueprint $table) {
+                $table->text('cover_letter')->nullable(false)->change();
+            });
+        }
     }
 }

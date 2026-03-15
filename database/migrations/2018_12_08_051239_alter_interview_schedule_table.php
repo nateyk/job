@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Schema;
 
 class AlterInterviewScheduleTable extends Migration {
 
@@ -12,6 +13,9 @@ class AlterInterviewScheduleTable extends Migration {
 	 */
 	public function up()
 	{
+        if (Schema::getConnection()->getDriverName() !== 'mysql') {
+            return;
+        }
         DB::statement("ALTER TABLE `interview_schedules` CHANGE `status` `status` ENUM('rejected', 'hired', 'pending', 'canceled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending';");
     }
 
