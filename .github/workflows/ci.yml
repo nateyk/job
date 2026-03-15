@@ -38,6 +38,11 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
+          sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
+          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=database\/database.sqlite/' .env
+          touch database/database.sqlite
+          php artisan migrate --force
+          touch storage/installed
 
       - name: Run tests
         run: ./vendor/bin/phpunit
