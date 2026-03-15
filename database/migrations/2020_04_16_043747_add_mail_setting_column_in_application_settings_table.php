@@ -15,10 +15,16 @@ class AddMailSettingColumnInApplicationSettingsTable extends Migration
     public function up()
     {
         Schema::table('application_settings', function (Blueprint $table) {
-            $table->text('mail_setting')->after('legal_term');
+            $column = $table->text('mail_setting')->nullable();
+            if (Schema::getConnection()->getDriverName() === 'mysql') {
+                $column->after('legal_term');
+            }
         });
 
         $applicationSetting = ApplicationSetting::select('id', 'mail_setting')->first();
+        if (!$applicationSetting) {
+            return;
+        }
 
         $applicationSetting->mail_setting = [
             '1' => [
