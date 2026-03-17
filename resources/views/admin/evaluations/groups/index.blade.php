@@ -59,7 +59,8 @@
 
 @push('footer-script')
     <script>
-        $('.delete-group').click(function () {
+        $(document).on('click', '.delete-group', function (e) {
+            e.preventDefault();
             var groupId = $(this).data('group-id');
             swal({
                 title: "@lang('errors.areYouSure')",
@@ -81,6 +82,7 @@
                 $.easyAjax({
                     url: url,
                     type: 'POST',
+                    container: '.card-body',
                     data: {_token: '{{ csrf_token() }}', _method: 'DELETE'},
                     success: function (response) {
                         if (response.status === 'success') {
