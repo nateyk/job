@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\AdminJobTypeController;
 use App\Http\Controllers\Admin\AdminCurrencyController;
 use App\Http\Controllers\Admin\AdminWorkExperienceController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -77,6 +79,12 @@ Route::group(['middleware' => 'auth'], function () {
 
                     // Application Form routes
                     Route::resource('application-setting', 'ApplicationSettingsController');
+
+                    // Evaluations (groups + criteria)
+                    Route::resource('evaluation-groups', 'EvaluationGroupController');
+                    Route::post('evaluation-groups/{group}/criteria', 'EvaluationGroupController@storeCriterion')->name('evaluation-groups.criteria.store');
+                    Route::put('evaluation-groups/{group}/criteria/{criterion}', 'EvaluationGroupController@updateCriterion')->name('evaluation-groups.criteria.update');
+                    Route::delete('evaluation-groups/{group}/criteria/{criterion}', 'EvaluationGroupController@destroyCriterion')->name('evaluation-groups.criteria.destroy');
                     
                     // Role permission routes
                     Route::post('role-permission/assignAllPermission', ['as' => 'role-permission.assignAllPermission', 'uses' => 'ManageRolePermissionController@assignAllPermission']);
@@ -138,6 +146,7 @@ Route::group(['middleware' => 'auth'], function () {
             Route::resource('jobs', 'AdminJobsController');
 
             Route::post('job-applications/rating-save/{id?}', 'AdminJobApplicationController@ratingSave')->name('job-applications.rating-save');
+            Route::post('job-applications/{application}/save-evaluation', 'AdminJobApplicationController@saveEvaluation')->name('job-applications.saveEvaluation');
             Route::get('job-applications/create-schedule/{id?}', 'AdminJobApplicationController@createSchedule')->name('job-applications.create-schedule');
             Route::post('job-applications/store-schedule', 'AdminJobApplicationController@storeSchedule')->name('job-applications.store-schedule');
             Route::get('job-applications/question/{jobID}/{applicationId?}', 'AdminJobApplicationController@jobQuestion')->name('job-applications.question');

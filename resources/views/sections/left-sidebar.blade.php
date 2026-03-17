@@ -186,6 +186,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('admin.evaluation-groups.index') }}" class="nav-link {{ request()->is('admin/settings/evaluation-groups*') ? 'active' : '' }}">
+                                <i class="fa fa-circle-o nav-icon"></i>
+                                <p>@lang('menu.evaluations')</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{{route('admin.currency-settings.index')}}" class="nav-link {{ request()->is('admin/settings/currency-settings') ? 'active' : '' }}">
                                 <i class="fa fa-circle-o nav-icon"></i>
                                 <p>@lang('menu.currencySetting')</p>

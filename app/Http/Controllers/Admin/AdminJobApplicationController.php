@@ -15,6 +15,9 @@ use App\JobApplication;
 use App\ApplicationStatus;
 use App\InterviewSchedule;
 use App\ApplicationSetting;
+use App\EvaluationGroup;
+use App\ApplicationEvaluation;
+use App\ApplicationEvaluationScore;
 use Illuminate\Support\Arr;
 use App\Traits\ZoomSettings;
 use Illuminate\Http\Request;
@@ -125,6 +128,7 @@ class AdminJobApplicationController extends AdminBaseController
         }])
         ->with(['applications' => function ($r) use ($startDate, $endDate, $request) {
             $r = $r->select('job_applications.*');
+            $r->with(['latestEvaluation.group']);
             if ($request->startDate !== null && $request->startDate != 'null' && $request->startDate != '') {
                 $r = $r->where(DB::raw('DATE(job_applications.`created_at`)'), '>=', $request->startDate);
             } else {
@@ -662,7 +666,18 @@ class AdminJobApplicationController extends AdminBaseController
 
     public function show($id)
     {
-        $this->application = JobApplication::with(['schedule','notes','onboard', 'status', 'schedule.employee', 'schedule.comments.user'])->find($id);
+        abort_if(!$this->user->cans('view_job_applications'), 403);
+
+        $this->application = JobApplication::with([
+                'schedule',
+                'notes',
+                'onboard',
+                'status',
+                'schedule.employee',
+                'schedule.comments.user',
+                'evaluations.scores.criterion',
+            ])
+            ->findOrFail($id);
         $this->skills = Skill::select('id', 'name')->get();
 
         $this->answers = JobApplicationAnswer::with(['question'])
@@ -670,9 +685,85 @@ class AdminJobApplicationController extends AdminBaseController
             ->where('job_application_id', $this->application->id)
             ->get();
 
+        $this->evaluationGroups = EvaluationGroup::with(['criteria'])
+            ->where('active', true)
+            ->get();
+
+        $this->applicationEvaluations = $this->application->evaluations
+            ->load(['group', 'scores.criterion'])
+            ->keyBy('evaluation_group_id');
+
 
         $view = view('admin.job-applications.show', $this->data)->render();
         return Reply::dataOnly(['status' => 'success', 'view' => $view]);
+    }
+
+    public function saveEvaluation(Request $request, $applicationId)
+    {
+        abort_if(!$this->user->cans('edit_job_applications'), 403);
+
+        $application = JobApplication::findOrFail($applicationId);
+
+        $request->validate([
+            'evaluation_group_id'   => 'required|exists:evaluation_groups,id',
+            'criteria'              => 'array',
+            'criteria.*'            => 'nullable|integer|min:0|max:100',
+            'overall_comment'       => 'nullable|string',
+        ]);
+
+        $groupId = (int) $request->evaluation_group_id;
+        $criteriaInput = $request->input('criteria', []);
+
+        $group = EvaluationGroup::with('criteria:id,evaluation_group_id,weight')
+            ->findOrFail($groupId);
+
+        $weightByCriterionId = [];
+        $sumWeights = 0;
+        foreach ($group->criteria as $criterion) {
+            $weightByCriterionId[(int) $criterion->id] = (int) $criterion->weight;
+            $sumWeights += (int) $criterion->weight;
+        }
+
+        $evaluation = ApplicationEvaluation::firstOrNew([
+            'job_application_id'  => $application->id,
+            'evaluation_group_id' => $groupId,
+        ]);
+
+        $evaluation->evaluator_id    = $this->user->id;
+        $evaluation->overall_comment = $request->input('overall_comment');
+
+        if ($sumWeights > 0) {
+            $weightedSum = 0.0;
+
+            foreach ($weightByCriterionId as $criterionId => $weight) {
+                $raw = $criteriaInput[$criterionId] ?? null;
+                $score = ($raw === null || $raw === '') ? 0 : (int) $raw;
+                $weightedSum += $score * $weight;
+            }
+
+            $evaluation->total_score = (int) round($weightedSum / $sumWeights);
+        } else {
+            $evaluation->total_score = null;
+        }
+
+        $evaluation->save();
+
+        foreach ($weightByCriterionId as $criterionId => $weight) {
+            $raw = $criteriaInput[$criterionId] ?? null;
+            $score = ($raw === null || $raw === '') ? null : (int) $raw;
+
+            ApplicationEvaluationScore::updateOrCreate(
+                [
+                    'application_evaluation_id' => $evaluation->id,
+                    'evaluation_criterion_id'   => $criterionId,
+                ],
+                [
+                    'score' => $score,
+                ]
+            );
+        }
+
+        return Reply::success(__('messages.updatedSuccessfully'));
     }
 
     public function updateIndex(Request $request)
@@ -817,7 +908,7 @@ class AdminJobApplicationController extends AdminBaseController
 
         $this->currentDate = Carbon::now()->timestamp;
 
-        $applications = JobApplication::with('status')->select('job_applications.*')
+        $applications = JobApplication::with(['status', 'latestEvaluation.group'])->select('job_applications.*')
         ->where('status_id', $request->columnId);
         
         

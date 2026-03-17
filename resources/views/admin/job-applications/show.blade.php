@@ -41,6 +41,18 @@
                         <option value="5">5</option>
                     </select>
                 </div>
+                @if(isset($applicationEvaluations) && $applicationEvaluations->count() > 0)
+                    @php
+                        $latestEval = $applicationEvaluations->sortByDesc('updated_at')->first();
+                    @endphp
+                    @if($latestEval && $latestEval->total_score !== null)
+                        <div class="text-center mt-2">
+                            <span class="badge badge-primary">
+                                Eval: {{ $latestEval->total_score }}/100
+                            </span>
+                        </div>
+                    @endif
+                @endif
             @endif
             @if($application->status->status == 'hired' && is_null($application->onboard))
                 <p class="text-muted resume-button">
@@ -152,6 +164,8 @@
                 @empty
                 @endforelse
             </div>
+
+            {{-- Evaluations UI moved under Skills (see below) --}}
             @if(!is_null($application->schedule))
                 <hr>
 
@@ -247,6 +261,61 @@
                     @endif
                 </a>
             </div>
+
+            @if (isset($evaluationGroups) && $evaluationGroups->count() > 0)
+                <div class="col-12" id="evaluations-container">
+                    <hr>
+                    <div class="col-sm-12 mb-3">
+                        <h5>@lang('menu.evaluations')</h5>
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label for="evaluation_group_id">Evaluation group</label>
+                        <select id="evaluation_group_id" class="form-control">
+                            <option value="">Select evaluation group</option>
+                            @foreach($evaluationGroups as $group)
+                                @php
+                                    $eval = $applicationEvaluations[$group->id] ?? null;
+                                @endphp
+                                <option value="{{ $group->id }}">
+                                    {{ $group->name }}
+                                    @if($eval && $eval->total_score !== null)
+                                        ({{ $eval->total_score }}/100)
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted">Select a group to start scoring. Nothing is selected by default.</small>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="text-muted">Total</div>
+                        <div class="font-weight-bold" id="evaluation-total">-- / 100</div>
+                    </div>
+
+                    <div id="evaluation-criteria-container"></div>
+
+                    <div class="form-group">
+                        <label for="overall_comment">Overall comment</label>
+                        <textarea id="overall_comment" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <button type="button"
+                            id="save-evaluation"
+                            class="btn btn-sm btn-outline-primary">
+                        Save evaluation
+                    </button>
+
+                    <script>
+                        window.evaluationData = {
+                            groups: @json($evaluationGroups),
+                            evaluations: @json($applicationEvaluations),
+                            saveUrl: "{{ route('admin.job-applications.saveEvaluation', $application->id) }}",
+                            csrfToken: "{{ csrf_token() }}"
+                        };
+                    </script>
+                </div>
+            @endif
         @endif
         <div class="col-12">
             <hr>
@@ -320,6 +389,222 @@
         $('#example-fontawesome').barrating('set', {{$application->rating}});
         @endif
 
+    </script>
+    <script>
+        (function () {
+            if (typeof window.evaluationData === 'undefined') {
+                return;
+            }
+
+            var groups      = window.evaluationData.groups || [];
+            var evaluations = window.evaluationData.evaluations || {};
+            var saveUrl     = window.evaluationData.saveUrl;
+            var csrfToken   = window.evaluationData.csrfToken;
+
+            var groupSelect        = document.getElementById('evaluation_group_id');
+            var criteriaContainer  = document.getElementById('evaluation-criteria-container');
+            var overallCommentEl   = document.getElementById('overall_comment');
+            var saveButton         = document.getElementById('save-evaluation');
+            var totalEl            = document.getElementById('evaluation-total');
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function findGroup(id) {
+                id = parseInt(id, 10);
+                for (var i = 0; i < groups.length; i++) {
+                    if (parseInt(groups[i].id, 10) === id) {
+                        return groups[i];
+                    }
+                }
+                return null;
+            }
+
+            function findEvaluation(groupId) {
+                groupId = parseInt(groupId, 10);
+                return evaluations[groupId] || null;
+            }
+
+            function renderCriteria() {
+                if (!groupSelect || !criteriaContainer) {
+                    return;
+                }
+
+                var groupId = groupSelect.value;
+                if (!groupId) {
+                    criteriaContainer.innerHTML = '';
+                    if (overallCommentEl) {
+                        overallCommentEl.value = '';
+                    }
+                    if (totalEl) {
+                        totalEl.textContent = '-- / 100';
+                    }
+                    return;
+                }
+                var group   = findGroup(groupId);
+                var existing = findEvaluation(groupId);
+
+                if (!group) {
+                    criteriaContainer.innerHTML = '';
+                    if (overallCommentEl) {
+                        overallCommentEl.value = '';
+                    }
+                    if (totalEl) {
+                        totalEl.textContent = '-- / 100';
+                    }
+                    return;
+                }
+
+                var rows = [];
+                (group.criteria || []).forEach(function (criterion) {
+                    var existingScore = null;
+                    if (existing && existing.scores) {
+                        existing.scores.forEach(function (scoreRow) {
+                            if (parseInt(scoreRow.evaluation_criterion_id, 10) === parseInt(criterion.id, 10)) {
+                                existingScore = scoreRow.score;
+                            }
+                        });
+                    }
+
+                    rows.push(
+                        '<tr>' +
+                            '<td>' + escapeHtml(criterion.name) + '</td>' +
+                            '<td class="text-right">' + criterion.weight + '%</td>' +
+                            '<td class="text-right">' +
+                                '<input type="number" class="form-control form-control-sm text-right" ' +
+                                'name="criteria[' + criterion.id + ']" ' +
+                                'value="' + (existingScore !== null ? existingScore : '') + '" ' +
+                                'min="0" max="100" />' +
+                            '</td>' +
+                        '</tr>'
+                    );
+                });
+
+                var html = '';
+                if (rows.length) {
+                    html += '<table class="table table-sm mb-2">';
+                    html += '<thead><tr><th>Criterion</th><th class="text-right">Weight %</th><th class="text-right">Score (0–100)</th></tr></thead>';
+                    html += '<tbody>' + rows.join('') + '</tbody></table>';
+                } else {
+                    html = '<p class="text-muted">No criteria configured for this group.</p>';
+                }
+
+                criteriaContainer.innerHTML = html;
+
+                if (overallCommentEl) {
+                    overallCommentEl.value = existing && existing.overall_comment ? existing.overall_comment : '';
+                }
+
+                // Show saved total (until user edits inputs)
+                if (totalEl) {
+                    if (existing && existing.total_score !== null && typeof existing.total_score !== 'undefined') {
+                        totalEl.textContent = existing.total_score + ' / 100';
+                    } else {
+                        totalEl.textContent = '-- / 100';
+                    }
+                }
+            }
+
+            if (groupSelect) {
+                groupSelect.addEventListener('change', renderCriteria);
+                renderCriteria();
+            }
+
+            if (saveButton) {
+                saveButton.addEventListener('click', function () {
+                    if (!groupSelect) {
+                        return;
+                    }
+                    var groupId = groupSelect.value;
+                    if (!groupId) {
+                        return;
+                    }
+
+                    var data = {
+                        _token: csrfToken,
+                        evaluation_group_id: groupId,
+                        criteria: {},
+                        overall_comment: overallCommentEl ? overallCommentEl.value : ''
+                    };
+
+                    // Send all criteria IDs for this group so clearing a field clears it server-side too.
+                    var group = findGroup(groupId);
+                    (group && group.criteria ? group.criteria : []).forEach(function (criterion) {
+                        var input = criteriaContainer.querySelector('input[name="criteria[' + criterion.id + ']"]');
+                        var value = input ? (input.value || '').trim() : '';
+                        data.criteria[String(criterion.id)] = value === '' ? null : parseInt(value, 10);
+                    });
+
+                    $.easyAjax({
+                        url: saveUrl,
+                        type: 'POST',
+                        container: '#evaluation-criteria-container',
+                        data: data,
+                        success: function (response) {
+                            if (response.status === 'success') {
+                                window.location.reload();
+                            }
+                        }
+                    });
+                });
+            }
+
+            // Live weighted total while typing
+            function updateLiveTotal() {
+                if (!totalEl || !groupSelect || !criteriaContainer) {
+                    return;
+                }
+
+                var groupId = groupSelect.value;
+                if (!groupId) {
+                    totalEl.textContent = '-- / 100';
+                    return;
+                }
+
+                var group = findGroup(groupId);
+                if (!group || !(group.criteria || []).length) {
+                    totalEl.textContent = '-- / 100';
+                    return;
+                }
+
+                var sumWeights = 0;
+                var weightedSum = 0;
+
+                (group.criteria || []).forEach(function (criterion) {
+                    var weight = parseInt(criterion.weight, 10) || 0;
+                    sumWeights += weight;
+
+                    var input = criteriaContainer.querySelector('input[name="criteria[' + criterion.id + ']"]');
+                    var score = 0;
+                    if (input && (input.value || '').trim() !== '') {
+                        score = parseInt(input.value, 10) || 0;
+                    }
+                    weightedSum += score * weight;
+                });
+
+                if (sumWeights <= 0) {
+                    totalEl.textContent = '-- / 100';
+                    return;
+                }
+
+                var total = Math.round(weightedSum / sumWeights);
+                totalEl.textContent = total + ' / 100';
+            }
+
+            if (criteriaContainer) {
+                criteriaContainer.addEventListener('input', function (e) {
+                    if (e && e.target && e.target.tagName === 'INPUT') {
+                        updateLiveTotal();
+                    }
+                });
+            }
+        })();
     </script>
 @endif
 <script>

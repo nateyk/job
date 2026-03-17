@@ -67,6 +67,16 @@ class JobApplication extends Model
         return $this->hasMany(ApplicantNote::class, 'job_application_id')->orderBy('id', 'desc');
     }
 
+    public function evaluations()
+    {
+        return $this->hasMany(ApplicationEvaluation::class, 'job_application_id');
+    }
+
+    public function latestEvaluation()
+    {
+        return $this->hasOne(ApplicationEvaluation::class, 'job_application_id')->latestOfMany();
+    }
+
     public function getPhotoUrlAttribute()
     {
         if (is_null($this->photo)) {

@@ -44,6 +44,7 @@ return array (
   'reports' => 'Report',
   'candidateDatabase' => 'Candidate Database',
   'applicationFormSettings' => 'Application Settings',
+  'evaluations' => 'Evaluations',
   'zoom' => 'Zoom',
   'zoomMeeting' => 'Zoom Meeting',
   'zoomSetting' => 'Zoom Setting',

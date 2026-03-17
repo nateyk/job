@@ -54,6 +54,13 @@
                                                     <option value="5">5</option>
                                                 </select>
                                             </div>
+                                            @if(!is_null($application->latestEvaluation) && $application->latestEvaluation->total_score !== null)
+                                                <div class="mt-1">
+                                                    <span class="badge badge-primary">
+                                                        Eval: {{ $application->latestEvaluation->total_score }}/100
+                                                    </span>
+                                                </div>
+                                            @endif
                                             <h6 class="text-muted">{{ ucwords($application->job->title) }}</h6>
                                             <div class="pt-2 pb-2 mt-3">
                                                 
