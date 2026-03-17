@@ -46,7 +46,13 @@ class EvaluationGroupController extends AdminBaseController
 
         EvaluationGroup::create($data);
 
-        return Reply::redirect(route('admin.evaluation-groups.index'), __('messages.createdSuccessfully'));
+        if ($request->ajax() || $request->expectsJson()) {
+            return Reply::redirect(route('admin.evaluation-groups.index'), __('messages.createdSuccessfully'));
+        }
+
+        return redirect()
+            ->route('admin.evaluation-groups.index')
+            ->with('message', __('messages.createdSuccessfully'));
     }
 
     public function edit($id)
@@ -74,7 +80,13 @@ class EvaluationGroupController extends AdminBaseController
 
         $group->update($data);
 
-        return Reply::redirect(route('admin.evaluation-groups.edit', $group->id), __('messages.updatedSuccessfully'));
+        if ($request->ajax() || $request->expectsJson()) {
+            return Reply::redirect(route('admin.evaluation-groups.edit', $group->id), __('messages.updatedSuccessfully'));
+        }
+
+        return redirect()
+            ->route('admin.evaluation-groups.edit', $group->id)
+            ->with('message', __('messages.updatedSuccessfully'));
     }
 
     public function destroy($id)
