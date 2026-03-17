@@ -96,7 +96,13 @@ class EvaluationGroupController extends AdminBaseController
         $group = EvaluationGroup::findOrFail($id);
         $group->delete();
 
-        return Reply::success(__('messages.recordDeleted'));
+        if (request()->ajax() || request()->expectsJson()) {
+            return Reply::success(__('messages.recordDeleted'));
+        }
+
+        return redirect()
+            ->route('admin.evaluation-groups.index')
+            ->with('message', __('messages.recordDeleted'));
     }
 
     public function storeCriterion(Request $request, $groupId)
