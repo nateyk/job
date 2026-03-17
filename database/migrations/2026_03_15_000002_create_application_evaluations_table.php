@@ -16,7 +16,7 @@ class CreateApplicationEvaluationsTable extends Migration
 
         Schema::create('application_evaluations', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedBigInteger('job_application_id');
+            $table->unsignedInteger('job_application_id');
             $table->unsignedBigInteger('evaluation_group_id');
             $table->unsignedBigInteger('evaluator_id')->nullable();
             $table->unsignedInteger('total_score')->nullable();

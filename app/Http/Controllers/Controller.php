@@ -20,7 +20,9 @@ class Controller extends BaseController
 
     public function __construct() {
         $this->showInstall();
-        $this->checkMigrateStatus();
+        // Never auto-run migrations on web requests (shared hosting safe).
+        // Run migrations manually during install/updates.
+        // $this->checkMigrateStatus();
         $this->global = CompanySetting::first();
         $this->smsSettings = SmsSetting::first();
 
