@@ -37,10 +37,16 @@
                                            class="btn btn-sm btn-info">
                                             @lang('app.edit')
                                         </a>
-                                        <a href="javascript:;" class="btn btn-sm btn-danger delete-group"
-                                           data-group-id="{{ $group->id }}">
-                                            @lang('app.delete')
-                                        </a>
+                                        <form action="{{ route('admin.evaluation-groups.destroy', $group->id) }}"
+                                              method="POST"
+                                              style="display: inline-block;"
+                                              onsubmit="return confirm('Delete this evaluation group?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                @lang('app.delete')
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             @empty
@@ -56,42 +62,4 @@
         </div>
     </div>
 @endsection
-
-@push('footer-script')
-    <script>
-        $(document).on('click', '.delete-group', function (e) {
-            e.preventDefault();
-            var groupId = $(this).data('group-id');
-            swal({
-                title: "@lang('errors.areYouSure')",
-                text: "@lang('errors.deleteWarning')",
-                type: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#DD6B55",
-                confirmButtonText: "@lang('app.delete')",
-                cancelButtonText: "@lang('app.cancel')",
-                closeOnConfirm: true,
-                closeOnCancel: true
-            }, function (isConfirm) {
-                if (!isConfirm) {
-                    return;
-                }
-
-                var url = "{{ route('admin.evaluation-groups.destroy', ':id') }}";
-                url = url.replace(':id', groupId);
-                $.easyAjax({
-                    url: url,
-                    type: 'POST',
-                    container: '.card-body',
-                    data: {_token: '{{ csrf_token() }}', _method: 'DELETE'},
-                    success: function (response) {
-                        if (response.status === 'success') {
-                            window.location.reload();
-                        }
-                    }
-                });
-            });
-        });
-    </script>
-@endpush
 
