@@ -472,6 +472,11 @@
                         });
                     }
 
+                    var maxScore = parseInt(criterion.max_score, 10);
+                    if (!maxScore || maxScore < 1) {
+                        maxScore = 100;
+                    }
+
                     rows.push(
                         '<tr>' +
                             '<td>' + escapeHtml(criterion.name) + '</td>' +
@@ -480,7 +485,8 @@
                                 '<input type="number" class="form-control form-control-sm text-right" ' +
                                 'name="criteria[' + criterion.id + ']" ' +
                                 'value="' + (existingScore !== null ? existingScore : '') + '" ' +
-                                'min="0" max="100" />' +
+                                'min="0" max="' + maxScore + '" />' +
+                                '<div class="small text-muted text-right">0–' + maxScore + '</div>' +
                             '</td>' +
                         '</tr>'
                     );
@@ -585,7 +591,16 @@
                     if (input && (input.value || '').trim() !== '') {
                         score = parseInt(input.value, 10) || 0;
                     }
-                    weightedSum += score * weight;
+
+                    var maxScore = parseInt(criterion.max_score, 10);
+                    if (!maxScore || maxScore < 1) {
+                        maxScore = 100;
+                    }
+                    if (score < 0) score = 0;
+                    if (score > maxScore) score = maxScore;
+
+                    var percent = (maxScore > 0) ? ((score / maxScore) * 100) : 0;
+                    weightedSum += percent * weight;
                 });
 
                 if (sumWeights <= 0) {
