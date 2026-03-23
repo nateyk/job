@@ -7,9 +7,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="card-title mb-0">@lang('menu.evaluations')</h4>
-                        <a href="{{ route('admin.evaluation-groups.create') }}" class="btn btn-sm btn-primary">
-                            @lang('app.add') Group
-                        </a>
+                        @if($user->cans('add_evaluations'))
+                            <a href="{{ route('admin.evaluation-groups.create') }}" class="btn btn-sm btn-primary">
+                                @lang('app.add') Group
+                            </a>
+                        @endif
                     </div>
 
                     <div class="table-responsive">
@@ -33,20 +35,24 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <a href="{{ route('admin.evaluation-groups.edit', $group->id) }}"
-                                           class="btn btn-sm btn-info">
-                                            @lang('app.edit')
-                                        </a>
-                                        <form action="{{ route('admin.evaluation-groups.destroy', $group->id) }}"
-                                              method="POST"
-                                              style="display: inline-block;"
-                                              onsubmit="return confirm('Delete this evaluation group?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                @lang('app.delete')
-                                            </button>
-                                        </form>
+                                        @if($user->cans('edit_evaluations'))
+                                            <a href="{{ route('admin.evaluation-groups.edit', $group->id) }}"
+                                               class="btn btn-sm btn-info">
+                                                @lang('app.edit')
+                                            </a>
+                                        @endif
+                                        @if($user->cans('delete_evaluations'))
+                                            <form action="{{ route('admin.evaluation-groups.destroy', $group->id) }}"
+                                                  method="POST"
+                                                  style="display: inline-block;"
+                                                  onsubmit="return confirm('Delete this evaluation group?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    @lang('app.delete')
+                                                </button>
+                                            </form>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty

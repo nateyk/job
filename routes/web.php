@@ -155,6 +155,8 @@ Route::group(['middleware' => 'auth'], function () {
             Route::get('job-applications/load-more', 'AdminJobApplicationController@loadMore')->name('job-applications.loadMore');
             Route::get('job-applications/table-view', 'AdminJobApplicationController@table')->name('job-applications.table');
             Route::post('job-applications/updateIndex', 'AdminJobApplicationController@updateIndex')->name('job-applications.updateIndex');
+            // Print-only page (extracts only application data + signature) - opens in a new tab.
+            Route::get('job-applications/print/{id}', 'AdminJobApplicationController@printJobApplication')->name('job-applications.print');
             Route::post('job-applications/archive-job-application/{application}', 'AdminJobApplicationController@archiveJobApplication')->name('job-applications.archiveJobApplication');
             Route::post('job-applications/unarchive-job-application/{application}', 'AdminJobApplicationController@unarchiveJobApplication')->name('job-applications.unarchiveJobApplication');
             Route::post('job-applications/add-skills/{applicationId}', 'AdminJobApplicationController@addSkills')->name('job-applications.addSkills');

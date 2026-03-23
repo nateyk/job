@@ -11,9 +11,43 @@
         margin-top: 1rem
     }
 
+    .no-print {
+        display: block;
+    }
+
+    .print-only {
+        display: none;
+    }
+
+    .signature-dash {
+        border-bottom: 2px dashed #000;
+        width: 320px;
+        margin-top: 48px;
+    }
+
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+
+        .print-only {
+            display: block !important;
+        }
+
+        /* Ensure the right sidebar prints normally (no overlay positioning). */
+        .right-sidebar {
+            position: static !important;
+            top: auto !important;
+        }
+    }
 
 </style>
 <div class="rpanel-title"> @lang('menu.jobApplications') <span><i class="ti-close right-side-toggle"></i></span></div>
+<div class="no-print text-right mr-2 mb-2">
+    <button type="button" class="btn btn-sm btn-outline-secondary no-print" onclick="window.open('{{ route('admin.job-applications.print', $application->id) }}', '_blank');">
+        Print
+    </button>
+</div>
 <div class="r-panel-body p-3">
 
     <div class="row font-12">
@@ -263,15 +297,15 @@
             </div>
 
             @if (isset($evaluationGroups) && $evaluationGroups->count() > 0)
-                <div class="col-12" id="evaluations-container">
+                <div class="col-12 job-evaluation-block" id="job-eval-root-{{ $application->id }}" data-application-id="{{ $application->id }}">
                     <hr>
                     <div class="col-sm-12 mb-3">
                         <h5>@lang('menu.evaluations')</h5>
                     </div>
 
                     <div class="form-group mb-2">
-                        <label for="evaluation_group_id">Evaluation group</label>
-                        <select id="evaluation_group_id" class="form-control">
+                        <label for="evaluation_group_select_{{ $application->id }}">Evaluation group</label>
+                        <select id="evaluation_group_select_{{ $application->id }}" class="form-control" data-eval-role="group-select">
                             <option value="">Select evaluation group</option>
                             @foreach($evaluationGroups as $group)
                                 @php
@@ -285,31 +319,31 @@
                                 </option>
                             @endforeach
                         </select>
-                        <small class="text-muted">Select a group to start scoring. Nothing is selected by default.</small>
+                        <small class="text-muted">Choose Driver, Accounting, etc. — only that group’s criteria appear below. Weights should sum to 100% per group for a clear total.</small>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div class="text-muted">Total</div>
-                        <div class="font-weight-bold" id="evaluation-total">-- / 100</div>
+                        <div class="font-weight-bold" data-eval-role="total">-- / 100</div>
                     </div>
 
-                    <div id="evaluation-criteria-container"></div>
+                    <div data-eval-role="criteria"></div>
 
                     <div class="form-group">
-                        <label for="overall_comment">Overall comment</label>
-                        <textarea id="overall_comment" class="form-control" rows="2"></textarea>
+                        <label for="overall_comment_{{ $application->id }}">Overall comment</label>
+                        <textarea id="overall_comment_{{ $application->id }}" class="form-control" rows="2" data-eval-role="overall-comment"></textarea>
                     </div>
 
                     <button type="button"
-                            id="save-evaluation"
-                            class="btn btn-sm btn-outline-primary">
+                            class="btn btn-sm btn-outline-primary"
+                            data-eval-role="save">
                         Save evaluation
                     </button>
 
                     <script>
-                        window.evaluationData = {
-                            groups: @json($evaluationGroups),
-                            evaluations: @json($applicationEvaluations),
+                        window.evaluationData_{{ $application->id }} = {
+                            groups: @json($evaluationGroupsPayload ?? []),
+                            evaluations: @json($applicationEvaluationsPayload ?? []),
                             saveUrl: "{{ route('admin.job-applications.saveEvaluation', $application->id) }}",
                             csrfToken: "{{ csrf_token() }}"
                         };
@@ -353,6 +387,25 @@
                 </div>
             @endif
 
+            @php
+                $adminRoleName = '';
+                if (isset($user) && $user && $user->role && $user->role->role) {
+                    $adminRoleName = $user->role->role->display_name;
+                }
+            @endphp
+
+            <div class="print-only col-sm-12">
+                <hr>
+                <div class="mt-3">
+                    <strong>Signed by:</strong> {{ ucwords($user->name) }}
+                </div>
+                <div class="mt-1">
+                    <strong>Role:</strong> {{ $adminRoleName ? $adminRoleName : '-' }}
+                </div>
+                <div class="signature-dash"></div>
+                <div class="mt-1 text-muted small">Signature</div>
+            </div>
+
         </div>
 
 
@@ -392,20 +445,27 @@
     </script>
     <script>
         (function () {
-            if (typeof window.evaluationData === 'undefined') {
+            var appId = {{ (int) $application->id }};
+            var evalRoot = document.getElementById('job-eval-root-' + appId);
+            if (!evalRoot) {
+                return;
+            }
+            var dataKey = 'evaluationData_' + appId;
+            if (typeof window[dataKey] === 'undefined') {
                 return;
             }
 
-            var groups      = window.evaluationData.groups || [];
-            var evaluations = window.evaluationData.evaluations || {};
-            var saveUrl     = window.evaluationData.saveUrl;
-            var csrfToken   = window.evaluationData.csrfToken;
+            var payload = window[dataKey];
+            var groups = payload.groups || [];
+            var evaluations = payload.evaluations || {};
+            var saveUrl = payload.saveUrl;
+            var csrfToken = payload.csrfToken;
 
-            var groupSelect        = document.getElementById('evaluation_group_id');
-            var criteriaContainer  = document.getElementById('evaluation-criteria-container');
-            var overallCommentEl   = document.getElementById('overall_comment');
-            var saveButton         = document.getElementById('save-evaluation');
-            var totalEl            = document.getElementById('evaluation-total');
+            var groupSelect = evalRoot.querySelector('[data-eval-role="group-select"]');
+            var criteriaContainer = evalRoot.querySelector('[data-eval-role="criteria"]');
+            var overallCommentEl = evalRoot.querySelector('[data-eval-role="overall-comment"]');
+            var saveButton = evalRoot.querySelector('[data-eval-role="save"]');
+            var totalEl = evalRoot.querySelector('[data-eval-role="total"]');
 
             function escapeHtml(value) {
                 return String(value)
@@ -427,8 +487,50 @@
             }
 
             function findEvaluation(groupId) {
-                groupId = parseInt(groupId, 10);
-                return evaluations[groupId] || null;
+                var k = String(parseInt(groupId, 10));
+                return evaluations[k] || evaluations[parseInt(groupId, 10)] || null;
+            }
+
+            /** Only criteria that belong to this group (defensive if data was wrong). */
+            function criteriaForGroup(group) {
+                if (!group) {
+                    return [];
+                }
+                var gid = parseInt(group.id, 10);
+                return (group.criteria || []).filter(function (c) {
+                    if (c.evaluation_group_id === undefined || c.evaluation_group_id === null) {
+                        return true;
+                    }
+                    return parseInt(c.evaluation_group_id, 10) === gid;
+                });
+            }
+
+            function maxPointsFor(criterion) {
+                var mp = parseInt(criterion.max_points, 10);
+                if (!isNaN(mp) && mp >= 0) {
+                    return mp;
+                }
+                var w = parseInt(criterion.weight, 10) || 0;
+                return w;
+            }
+
+            function clampInput(input, maxP) {
+                if (!input || maxP < 0) {
+                    return;
+                }
+                var raw = (input.value || '').trim();
+                if (raw === '') {
+                    return;
+                }
+                var v = parseInt(raw, 10);
+                if (isNaN(v)) {
+                    return;
+                }
+                if (v < 0) {
+                    input.value = 0;
+                } else if (v > maxP) {
+                    input.value = maxP;
+                }
             }
 
             function renderCriteria() {
@@ -447,11 +549,15 @@
                     }
                     return;
                 }
-                var group   = findGroup(groupId);
-                var existing = findEvaluation(groupId);
 
-                if (!group) {
-                    criteriaContainer.innerHTML = '';
+                var group = findGroup(groupId);
+                var existing = findEvaluation(groupId);
+                var list = criteriaForGroup(group);
+
+                if (!group || !list.length) {
+                    criteriaContainer.innerHTML = group
+                        ? '<p class="text-muted">No criteria configured for this group.</p>'
+                        : '';
                     if (overallCommentEl) {
                         overallCommentEl.value = '';
                     }
@@ -462,7 +568,8 @@
                 }
 
                 var rows = [];
-                (group.criteria || []).forEach(function (criterion) {
+                list.forEach(function (criterion) {
+                    var maxP = maxPointsFor(criterion);
                     var existingScore = null;
                     if (existing && existing.scores) {
                         existing.scores.forEach(function (scoreRow) {
@@ -471,35 +578,35 @@
                             }
                         });
                     }
-
-                    var maxScore = parseInt(criterion.max_score, 10);
-                    if (!maxScore || maxScore < 1) {
-                        maxScore = 100;
+                    var displayVal = '';
+                    if (existingScore !== null && existingScore !== undefined && existingScore !== '') {
+                        var n = parseInt(existingScore, 10);
+                        if (!isNaN(n)) {
+                            displayVal = Math.min(n, maxP);
+                        }
                     }
 
                     rows.push(
                         '<tr>' +
                             '<td>' + escapeHtml(criterion.name) + '</td>' +
                             '<td class="text-right">' + criterion.weight + '%</td>' +
-                            '<td class="text-right">' +
-                                '<input type="number" class="form-control form-control-sm text-right" ' +
+                            '<td class="text-right" style="max-width: 8rem;">' +
+                                '<input type="number" class="form-control form-control-sm text-right eval-score-input" ' +
+                                'data-max-points="' + maxP + '" ' +
                                 'name="criteria[' + criterion.id + ']" ' +
-                                'value="' + (existingScore !== null ? existingScore : '') + '" ' +
-                                'min="0" max="' + maxScore + '" />' +
-                                '<div class="small text-muted text-right">0–' + maxScore + '</div>' +
+                                'value="' + (displayVal !== '' ? displayVal : '') + '" ' +
+                                'min="0" max="' + maxP + '" step="1" ' +
+                                'title="Enter 0–' + maxP + ' (cannot exceed weight % for this row)" />' +
+                                '<div class="text-muted small mt-1">0–' + maxP + ' pts</div>' +
                             '</td>' +
                         '</tr>'
                     );
                 });
 
-                var html = '';
-                if (rows.length) {
-                    html += '<table class="table table-sm mb-2">';
-                    html += '<thead><tr><th>Criterion</th><th class="text-right">Weight %</th><th class="text-right">Score (0–100)</th></tr></thead>';
-                    html += '<tbody>' + rows.join('') + '</tbody></table>';
-                } else {
-                    html = '<p class="text-muted">No criteria configured for this group.</p>';
-                }
+                var html = '<table class="table table-sm mb-2">';
+                html += '<thead><tr><th>Criterion</th><th class="text-right">Weight %</th>';
+                html += '<th class="text-right">Points <span class="text-muted font-weight-normal">(max = weight)</span></th></tr></thead>';
+                html += '<tbody>' + rows.join('') + '</tbody></table>';
 
                 criteriaContainer.innerHTML = html;
 
@@ -507,19 +614,76 @@
                     overallCommentEl.value = existing && existing.overall_comment ? existing.overall_comment : '';
                 }
 
-                // Show saved total (until user edits inputs)
-                if (totalEl) {
-                    if (existing && existing.total_score !== null && typeof existing.total_score !== 'undefined') {
-                        totalEl.textContent = existing.total_score + ' / 100';
-                    } else {
-                        totalEl.textContent = '-- / 100';
-                    }
+                updateLiveTotal();
+            }
+
+            /** Total % = sum(points) / sum(weights) × 100 (weights should sum to 100 per group). */
+            function updateLiveTotal() {
+                if (!totalEl || !groupSelect || !criteriaContainer) {
+                    return;
                 }
+
+                var groupId = groupSelect.value;
+                if (!groupId) {
+                    totalEl.textContent = '-- / 100';
+                    return;
+                }
+
+                var group = findGroup(groupId);
+                var list = criteriaForGroup(group);
+                if (!group || !list.length) {
+                    totalEl.textContent = '-- / 100';
+                    return;
+                }
+
+                var sumWeights = 0;
+                var sumScores = 0;
+
+                list.forEach(function (criterion) {
+                    var weight = parseInt(criterion.weight, 10) || 0;
+                    sumWeights += weight;
+
+                    var input = criteriaContainer.querySelector('input[name="criteria[' + criterion.id + ']"]');
+                    var score = 0;
+                    if (input && (input.value || '').trim() !== '') {
+                        score = parseInt(input.value, 10) || 0;
+                    }
+                    sumScores += score;
+                });
+
+                if (sumWeights <= 0) {
+                    totalEl.textContent = '-- / 100';
+                    return;
+                }
+
+                var total = Math.round(100 * sumScores / sumWeights);
+                totalEl.textContent = total + ' / 100';
             }
 
             if (groupSelect) {
                 groupSelect.addEventListener('change', renderCriteria);
                 renderCriteria();
+            }
+
+            if (criteriaContainer) {
+                criteriaContainer.addEventListener('input', function (e) {
+                    if (e && e.target && e.target.classList && e.target.classList.contains('eval-score-input')) {
+                        var maxP = parseInt(e.target.getAttribute('data-max-points'), 10);
+                        if (!isNaN(maxP)) {
+                            clampInput(e.target, maxP);
+                        }
+                        updateLiveTotal();
+                    }
+                });
+                criteriaContainer.addEventListener('blur', function (e) {
+                    if (e && e.target && e.target.classList && e.target.classList.contains('eval-score-input')) {
+                        var maxP = parseInt(e.target.getAttribute('data-max-points'), 10);
+                        if (!isNaN(maxP)) {
+                            clampInput(e.target, maxP);
+                        }
+                        updateLiveTotal();
+                    }
+                }, true);
             }
 
             if (saveButton) {
@@ -539,10 +703,13 @@
                         overall_comment: overallCommentEl ? overallCommentEl.value : ''
                     };
 
-                    // Send all criteria IDs for this group so clearing a field clears it server-side too.
                     var group = findGroup(groupId);
-                    (group && group.criteria ? group.criteria : []).forEach(function (criterion) {
+                    criteriaForGroup(group).forEach(function (criterion) {
                         var input = criteriaContainer.querySelector('input[name="criteria[' + criterion.id + ']"]');
+                        var maxP = maxPointsFor(criterion);
+                        if (input) {
+                            clampInput(input, maxP);
+                        }
                         var value = input ? (input.value || '').trim() : '';
                         data.criteria[String(criterion.id)] = value === '' ? null : parseInt(value, 10);
                     });
@@ -550,7 +717,7 @@
                     $.easyAjax({
                         url: saveUrl,
                         type: 'POST',
-                        container: '#evaluation-criteria-container',
+                        container: '#job-eval-root-' + appId,
                         data: data,
                         success: function (response) {
                             if (response.status === 'success') {
@@ -558,65 +725,6 @@
                             }
                         }
                     });
-                });
-            }
-
-            // Live weighted total while typing
-            function updateLiveTotal() {
-                if (!totalEl || !groupSelect || !criteriaContainer) {
-                    return;
-                }
-
-                var groupId = groupSelect.value;
-                if (!groupId) {
-                    totalEl.textContent = '-- / 100';
-                    return;
-                }
-
-                var group = findGroup(groupId);
-                if (!group || !(group.criteria || []).length) {
-                    totalEl.textContent = '-- / 100';
-                    return;
-                }
-
-                var sumWeights = 0;
-                var weightedSum = 0;
-
-                (group.criteria || []).forEach(function (criterion) {
-                    var weight = parseInt(criterion.weight, 10) || 0;
-                    sumWeights += weight;
-
-                    var input = criteriaContainer.querySelector('input[name="criteria[' + criterion.id + ']"]');
-                    var score = 0;
-                    if (input && (input.value || '').trim() !== '') {
-                        score = parseInt(input.value, 10) || 0;
-                    }
-
-                    var maxScore = parseInt(criterion.max_score, 10);
-                    if (!maxScore || maxScore < 1) {
-                        maxScore = 100;
-                    }
-                    if (score < 0) score = 0;
-                    if (score > maxScore) score = maxScore;
-
-                    var percent = (maxScore > 0) ? ((score / maxScore) * 100) : 0;
-                    weightedSum += percent * weight;
-                });
-
-                if (sumWeights <= 0) {
-                    totalEl.textContent = '-- / 100';
-                    return;
-                }
-
-                var total = Math.round(weightedSum / sumWeights);
-                totalEl.textContent = total + ' / 100';
-            }
-
-            if (criteriaContainer) {
-                criteriaContainer.addEventListener('input', function (e) {
-                    if (e && e.target && e.target.tagName === 'INPUT') {
-                        updateLiveTotal();
-                    }
                 });
             }
         })();

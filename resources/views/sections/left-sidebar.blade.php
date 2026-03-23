@@ -172,6 +172,14 @@
                                 <p> @lang('menu.myProfile')</p>
                             </a>
                         </li>
+                        @if(in_array("view_evaluations", $userPermissions))
+                            <li class="nav-item">
+                                <a href="{{ route('admin.evaluation-groups.index') }}" class="nav-link {{ request()->is('admin/settings/evaluation-groups*') ? 'active' : '' }}">
+                                    <i class="fa fa-circle-o nav-icon"></i>
+                                    <p>@lang('menu.evaluations')</p>
+                                </a>
+                            </li>
+                        @endif
                         @if(in_array("manage_settings", $userPermissions))
                         <li class="nav-item">
                             <a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->is('admin/settings/settings') ? 'active' : '' }}">
@@ -183,12 +191,6 @@
                             <a href="{{ route('admin.application-setting.index') }}" class="nav-link {{ request()->is('admin/settings/application-setting') ? 'active' : '' }}">
                                 <i class="fa fa-circle-o nav-icon"></i>
                                 <p>@lang('menu.applicationFormSettings')</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('admin.evaluation-groups.index') }}" class="nav-link {{ request()->is('admin/settings/evaluation-groups*') ? 'active' : '' }}">
-                                <i class="fa fa-circle-o nav-icon"></i>
-                                <p>@lang('menu.evaluations')</p>
                             </a>
                         </li>
                         <li class="nav-item">

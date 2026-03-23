@@ -30,7 +30,9 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">@lang('app.save')</button>
+                        @if($user->cans('edit_evaluations'))
+                            <button type="submit" class="btn btn-primary">@lang('app.save')</button>
+                        @endif
                         <a href="{{ route('admin.evaluation-groups.index') }}" class="btn btn-default">@lang('app.cancel')</a>
                     </form>
 
@@ -38,6 +40,7 @@
 
                     <h5 class="mb-3">Criteria</h5>
 
+                    @if($user->cans('add_evaluations'))
                     <form id="createCriterion" class="ajax-form mb-3">
                         @csrf
                         <div class="row">
@@ -54,14 +57,16 @@
                                 <input type="number" name="position" class="form-control text-right" min="0">
                             </div>
                             <div class="col-md-2">
-                                <label>Max</label>
-                                <input type="number" name="max_score" class="form-control text-right" min="1" max="100" value="100">
+                                <label>Max points</label>
+                                <input type="number" name="max_score" class="form-control text-right" min="0" max="100" placeholder="= weight">
+                                <small class="text-muted">≤ weight %; leave empty to use weight.</small>
                             </div>
                         </div>
                         <div class="mt-2">
                             <button type="button" id="add-criterion" class="btn btn-sm btn-outline-success">Add criterion</button>
                         </div>
                     </form>
+                    @endif
 
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover" id="criteria-table">
@@ -70,7 +75,7 @@
                                 <th>Criterion</th>
                                 <th class="text-right">Weight %</th>
                                 <th class="text-right">Order</th>
-                                <th class="text-right">Max</th>
+                                <th class="text-right">Max pts</th>
                                 <th style="width: 220px;">Action</th>
                             </tr>
                             </thead>
@@ -80,10 +85,14 @@
                                     <td><input class="form-control form-control-sm" name="name" value="{{ $criterion->name }}"></td>
                                     <td><input class="form-control form-control-sm text-right" name="weight" type="number" min="0" max="100" value="{{ $criterion->weight }}"></td>
                                     <td><input class="form-control form-control-sm text-right" name="position" type="number" min="0" value="{{ $criterion->position }}"></td>
-                                    <td><input class="form-control form-control-sm text-right" name="max_score" type="number" min="1" max="100" value="{{ $criterion->max_score }}"></td>
+                                    <td><input class="form-control form-control-sm text-right" name="max_score" type="number" min="0" max="{{ $criterion->weight }}" value="{{ $criterion->max_score }}"></td>
                                     <td>
-                                        <a href="javascript:;" class="btn btn-sm btn-info save-criterion">@lang('app.save')</a>
-                                        <a href="javascript:;" class="btn btn-sm btn-danger delete-criterion">@lang('app.delete')</a>
+                                        @if($user->cans('edit_evaluations'))
+                                            <a href="javascript:;" class="btn btn-sm btn-info save-criterion">@lang('app.save')</a>
+                                        @endif
+                                        @if($user->cans('delete_evaluations'))
+                                            <a href="javascript:;" class="btn btn-sm btn-danger delete-criterion">@lang('app.delete')</a>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty

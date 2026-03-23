@@ -18,7 +18,7 @@ class EvaluationGroupController extends AdminBaseController
 
     public function index()
     {
-        abort_if(! $this->user->cans('manage_settings'), 403);
+        abort_if(! $this->user->cans('view_evaluations'), 403);
 
         $this->groups = EvaluationGroup::orderBy('name')->get();
 
@@ -27,14 +27,14 @@ class EvaluationGroupController extends AdminBaseController
 
     public function create()
     {
-        abort_if(! $this->user->cans('manage_settings'), 403);
+        abort_if(! $this->user->cans('add_evaluations'), 403);
 
         return view('admin.evaluations.groups.create', $this->data);
     }
 
     public function store(Request $request)
     {
-        abort_if(! $this->user->cans('manage_settings'), 403);
+        abort_if(! $this->user->cans('add_evaluations'), 403);
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
@@ -57,7 +57,7 @@ class EvaluationGroupController extends AdminBaseController
 
     public function edit($id)
     {
-        abort_if(! $this->user->cans('manage_settings'), 403);
+        abort_if(! $this->user->cans('edit_evaluations'), 403);
 
         $this->group = EvaluationGroup::with('criteria')->findOrFail($id);
 
@@ -66,7 +66,7 @@ class EvaluationGroupController extends AdminBaseController
 
     public function update(Request $request, $id)
     {
-        abort_if(! $this->user->cans('manage_settings'), 403);
+        abort_if(! $this->user->cans('edit_evaluations'), 403);
 
         $group = EvaluationGroup::findOrFail($id);
 
@@ -91,7 +91,7 @@ class EvaluationGroupController extends AdminBaseController
 
     public function destroy($id)
     {
-        abort_if(! $this->user->cans('manage_settings'), 403);
+        abort_if(! $this->user->cans('delete_evaluations'), 403);
 
         $group = EvaluationGroup::findOrFail($id);
         $group->delete();
@@ -107,7 +107,7 @@ class EvaluationGroupController extends AdminBaseController
 
     public function storeCriterion(Request $request, $groupId)
     {
-        abort_if(! $this->user->cans('manage_settings'), 403);
+        abort_if(! $this->user->cans('add_evaluations'), 403);
 
         $group = EvaluationGroup::findOrFail($groupId);
 
@@ -115,12 +115,16 @@ class EvaluationGroupController extends AdminBaseController
             'name' => 'required|string|max:255',
             'weight' => 'required|integer|min:0|max:100',
             'position' => 'nullable|integer|min:0|max:1000000',
-            'max_score' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $w = (int) $data['weight'];
+        $request->validate([
+            'max_score' => 'nullable|integer|min:0|max:'.$w,
         ]);
 
         $data['evaluation_group_id'] = $group->id;
         $data['position'] = $data['position'] ?? 0;
-        $data['max_score'] = $data['max_score'] ?? 100;
+        $data['max_score'] = $request->filled('max_score') ? (int) $request->input('max_score') : $w;
 
         EvaluationCriterion::create($data);
 
@@ -129,7 +133,7 @@ class EvaluationGroupController extends AdminBaseController
 
     public function updateCriterion(Request $request, $groupId, $criterionId)
     {
-        abort_if(! $this->user->cans('manage_settings'), 403);
+        abort_if(! $this->user->cans('edit_evaluations'), 403);
 
         $group = EvaluationGroup::findOrFail($groupId);
 
@@ -140,11 +144,15 @@ class EvaluationGroupController extends AdminBaseController
             'name' => 'required|string|max:255',
             'weight' => 'required|integer|min:0|max:100',
             'position' => 'nullable|integer|min:0|max:1000000',
-            'max_score' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $w = (int) $data['weight'];
+        $request->validate([
+            'max_score' => 'nullable|integer|min:0|max:'.$w,
         ]);
 
         $data['position'] = $data['position'] ?? 0;
-        $data['max_score'] = $data['max_score'] ?? 100;
+        $data['max_score'] = $request->filled('max_score') ? (int) $request->input('max_score') : $w;
 
         $criterion->update($data);
 
@@ -153,7 +161,7 @@ class EvaluationGroupController extends AdminBaseController
 
     public function destroyCriterion($groupId, $criterionId)
     {
-        abort_if(! $this->user->cans('manage_settings'), 403);
+        abort_if(! $this->user->cans('delete_evaluations'), 403);
 
         $group = EvaluationGroup::findOrFail($groupId);
 

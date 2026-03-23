@@ -23,7 +23,6 @@ use App\Traits\ZoomSettings;
 use Illuminate\Http\Request;
 use App\JobApplicationAnswer;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use MacsiDigital\Zoom\Facades\Zoom;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\JobApplicationExport;
@@ -669,10 +668,6 @@ class AdminJobApplicationController extends AdminBaseController
     {
         abort_if(!$this->user->cans('view_job_applications'), 403);
 
-        if (!Schema::hasTable('application_evaluation_scores')) {
-            return Reply::error("Evaluation scores table is missing. Please run `php artisan migrate` to create `application_evaluation_scores`.");
-        }
-
         $this->application = JobApplication::with([
                 'schedule',
                 'notes',
@@ -692,49 +687,147 @@ class AdminJobApplicationController extends AdminBaseController
 
         $this->evaluationGroups = EvaluationGroup::with(['criteria'])
             ->where('active', true)
+            ->orderBy('name')
             ->get();
 
         $this->applicationEvaluations = $this->application->evaluations
             ->load(['group', 'scores.criterion'])
             ->keyBy('evaluation_group_id');
 
+        // Explicit JSON payload so each group's criteria are scoped (avoids mixed groups / bad serialization).
+        $this->evaluationGroupsPayload = $this->evaluationGroups->map(function ($group) {
+            $gid = (int) $group->id;
+
+            return [
+                'id' => $gid,
+                'name' => $group->name,
+                'criteria' => $group->criteria
+                    ->filter(function ($c) use ($gid) {
+                        return (int) $c->evaluation_group_id === $gid;
+                    })
+                    ->values()
+                    ->map(function ($c) {
+                        $w = (int) $c->weight;
+                        $m = (int) $c->max_score;
+                        $maxPoints = $w > 0 ? min($w, max(1, $m)) : 0;
+
+                        return [
+                            'id' => (int) $c->id,
+                            'name' => $c->name,
+                            'weight' => $w,
+                            'evaluation_group_id' => (int) $c->evaluation_group_id,
+                            'max_points' => $maxPoints,
+                        ];
+                    })
+                    ->all(),
+            ];
+        })->values()->all();
+
+        // Build locally first: $this->applicationEvaluationsPayload is an overloaded property
+        // (AdminBaseController), and indirect array mutation may be ignored.
+        $applicationEvaluationsPayload = [];
+        foreach ($this->applicationEvaluations as $gid => $eval) {
+            $applicationEvaluationsPayload[(string) (int) $gid] = [
+                'total_score' => $eval->total_score,
+                'overall_comment' => $eval->overall_comment,
+                'scores' => $eval->scores->map(function ($s) {
+                    return [
+                        'evaluation_criterion_id' => (int) $s->evaluation_criterion_id,
+                        'score' => $s->score,
+                    ];
+                })->values()->all(),
+            ];
+        }
+        $this->applicationEvaluationsPayload = $applicationEvaluationsPayload;
 
         $view = view('admin.job-applications.show', $this->data)->render();
         return Reply::dataOnly(['status' => 'success', 'view' => $view]);
+    }
+
+    /**
+     * Print-only page (extracts only application data + signature).
+     * Opens in a new tab, and the page auto-triggers window.print().
+     */
+    public function printJobApplication($id)
+    {
+        abort_if(!$this->user->cans('view_job_applications'), 403);
+
+        $application = JobApplication::with([
+            'job.location',
+            'status',
+            'evaluations.group',
+        ])->findOrFail($id);
+
+        $answers = JobApplicationAnswer::with(['question'])
+            ->where('job_id', $application->job_id)
+            ->where('job_application_id', $application->id)
+            ->get();
+
+        $latestEval = $application->evaluations()
+            ->with([
+                'group.criteria',
+                'scores',
+            ])
+            ->orderBy('updated_at', 'desc')
+            ->first();
+
+        $adminRoleName = null;
+        if ($this->user && $this->user->role && $this->user->role->role) {
+            $adminRoleName = $this->user->role->role->display_name;
+        }
+
+        return view('admin.job-applications.print', [
+            'application' => $application,
+            'answers' => $answers,
+            'latestEval' => $latestEval,
+            'user' => $this->user,
+            'adminRoleName' => $adminRoleName,
+            'global' => $this->global,
+        ]);
     }
 
     public function saveEvaluation(Request $request, $applicationId)
     {
         abort_if(!$this->user->cans('edit_job_applications'), 403);
 
-        if (!Schema::hasTable('application_evaluation_scores')) {
-            return Reply::error("Evaluation scores table is missing. Please run `php artisan migrate` to create `application_evaluation_scores`.");
-        }
-
         $application = JobApplication::findOrFail($applicationId);
 
         $request->validate([
-            'evaluation_group_id'   => 'required|exists:evaluation_groups,id',
-            'criteria'              => 'array',
-            // Max is criterion-specific; we clamp server-side.
-            'criteria.*'            => 'nullable|integer|min:0|max:1000000',
-            'overall_comment'       => 'nullable|string',
+            'evaluation_group_id' => 'required|exists:evaluation_groups,id',
+            'criteria' => 'array',
+            'overall_comment' => 'nullable|string',
         ]);
 
         $groupId = (int) $request->evaluation_group_id;
         $criteriaInput = $request->input('criteria', []);
 
-        $group = EvaluationGroup::with('criteria:id,evaluation_group_id,weight,max_score')
+        $group = EvaluationGroup::with('criteria')
             ->findOrFail($groupId);
 
-        $criterionMetaById = [];
+        $weightByCriterionId = [];
+        $maxByCriterionId = [];
         $sumWeights = 0;
         foreach ($group->criteria as $criterion) {
-            $criterionMetaById[(int) $criterion->id] = [
-                'weight' => (int) $criterion->weight,
-                'max'    => max(1, (int) ($criterion->max_score ?? 100)),
+            $cid = (int) $criterion->id;
+            $w = (int) $criterion->weight;
+            $m = (int) $criterion->max_score;
+            $maxPoints = $w > 0 ? min($w, max(1, $m)) : 0;
+            $weightByCriterionId[$cid] = $w;
+            $maxByCriterionId[$cid] = $maxPoints;
+            $sumWeights += $w;
+        }
+
+        $criteriaRules = [];
+        foreach ($maxByCriterionId as $criterionId => $maxPoints) {
+            $criteriaRules['criteria.'.$criterionId] = [
+                'nullable',
+                'integer',
+                'min:0',
+                'max:'.$maxPoints,
             ];
-            $sumWeights += (int) $criterion->weight;
+        }
+        if ($criteriaRules !== []) {
+            $request->validate($criteriaRules);
         }
 
         $evaluation = ApplicationEvaluation::firstOrNew([
@@ -745,32 +838,24 @@ class AdminJobApplicationController extends AdminBaseController
         $evaluation->evaluator_id    = $this->user->id;
         $evaluation->overall_comment = $request->input('overall_comment');
 
+        // Scores are points out of max_points (<= weight). Total % = sum(points) / sum(weights) * 100.
         if ($sumWeights > 0) {
-            $weightedSum = 0.0;
-
-            foreach ($criterionMetaById as $criterionId => $meta) {
+            $sumScores = 0.0;
+            foreach ($weightByCriterionId as $criterionId => $weight) {
                 $raw = $criteriaInput[$criterionId] ?? null;
                 $score = ($raw === null || $raw === '') ? 0 : (int) $raw;
-                $score = max(0, min($score, $meta['max']));
-
-                // Convert raw score into % for this criterion, then weight it.
-                $percent = ($meta['max'] > 0) ? (($score / $meta['max']) * 100.0) : 0.0;
-                $weightedSum += $percent * $meta['weight'];
+                $sumScores += $score;
             }
-
-            $evaluation->total_score = (int) round($weightedSum / $sumWeights);
+            $evaluation->total_score = (int) round(100 * $sumScores / $sumWeights);
         } else {
             $evaluation->total_score = null;
         }
 
         $evaluation->save();
 
-        foreach ($criterionMetaById as $criterionId => $meta) {
+        foreach ($weightByCriterionId as $criterionId => $weight) {
             $raw = $criteriaInput[$criterionId] ?? null;
             $score = ($raw === null || $raw === '') ? null : (int) $raw;
-            if ($score !== null) {
-                $score = max(0, min($score, $meta['max']));
-            }
 
             ApplicationEvaluationScore::updateOrCreate(
                 [
