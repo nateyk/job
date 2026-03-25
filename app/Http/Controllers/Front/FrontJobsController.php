@@ -334,7 +334,8 @@ class FrontJobsController extends FrontBaseController
         Notification::send($users, new NewJobApplication($jobApplication, $linkedin));
         Mail::send(new ReceivedApplication($jobApplication, $global));
 
-        return Reply::dataOnly(['status' => 'success', 'msg' => __('modules.front.applySuccessMsg')]);
+        // Use standard Reply::success key (`message`) so $.easyAjax shows toast automatically.
+        return Reply::success(__('modules.front.applySuccessMsg'));
     }
 
     public function fetchCountryState(Request $request)

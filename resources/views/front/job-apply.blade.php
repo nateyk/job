@@ -273,8 +273,9 @@
                 // data: $('#createForm').serialize(),
                 success: function (response) {
                     if(response.status == 'success'){
+                        var msg = response.message || response.msg || '';
                         var successMsg = '<div class="alert alert-success my-100" role="alert">' +
-                            response.msg + ' <a class="" href="{{ route('jobs.jobOpenings') }}">@lang("app.view") @lang("modules.front.jobOpenings") <i class="fa fa-arrow-right"></i></a>'
+                            msg + ' <a class="" href="{{ route('jobs.jobOpenings') }}">@lang("app.view") @lang("modules.front.jobOpenings") <i class="fa fa-arrow-right"></i></a>'
                             '</div>';
                         $('.main-content .container').html(successMsg);
                     }
