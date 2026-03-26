@@ -31,6 +31,7 @@ use App\Notifications\NewJobApplication;
 use Laravel\Socialite\Facades\Socialite;
 use App\Http\Requests\FrontJobApplication;
 use App\Http\Requests\StoreJobAlert;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 class FrontJobsController extends FrontBaseController
@@ -331,8 +332,24 @@ class FrontJobsController extends FrontBaseController
         if($request->has('apply_type')){
             $linkedin = true;
         }
-        Notification::send($users, new NewJobApplication($jobApplication, $linkedin));
-        Mail::send(new ReceivedApplication($jobApplication, $global));
+        // Do not fail applicant submission if mail/notification transport fails on server.
+        try {
+            Notification::send($users, new NewJobApplication($jobApplication, $linkedin));
+        } catch (\Throwable $e) {
+            Log::warning('Job application admin notification failed', [
+                'job_application_id' => $jobApplication->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            Mail::send(new ReceivedApplication($jobApplication, $global));
+        } catch (\Throwable $e) {
+            Log::warning('Job application confirmation email failed', [
+                'job_application_id' => $jobApplication->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // Use standard Reply::success key (`message`) so $.easyAjax shows toast automatically,
         // and also keep legacy `msg` for templates that still read that key.
