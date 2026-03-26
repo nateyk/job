@@ -84,6 +84,10 @@ class FrontJobApplication extends CoreRequest
             $rules = Arr::add($rules, 'zip_code', 'required|integer');
         }
 
+        if ($requiredColumns['address']) {
+            $rules = Arr::add($rules, 'address', 'required|string');
+        }
+
         $this->get('answer');
         if(!empty($this->get('answer')))
         {
@@ -104,6 +108,7 @@ class FrontJobApplication extends CoreRequest
             'answer.*.required' => 'This answer field is required.',
             'dob.required' => 'Date of Birth field is required.',
             'country.min' => 'Please select country.',
+            'address.required' => 'Address field is required.',
             'state.min' => 'Please select state.',
             'city.required' => 'Please enter city.',
             'email.unique' => 'You have already applied for this job with this email. Try different one.'
