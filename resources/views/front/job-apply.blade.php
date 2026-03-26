@@ -277,7 +277,11 @@
                         var successMsg = '<div class="alert alert-success my-100" role="alert">' +
                             msg + ' <a class="" href="{{ route('jobs.jobOpenings') }}">@lang("app.view") @lang("modules.front.jobOpenings") <i class="fa fa-arrow-right"></i></a>'
                             '</div>';
-                        $('.main-content .container').html(successMsg);
+                        var $target = $('.main-content .container');
+                        if ($target.length === 0) {
+                            $target = $('.main-content');
+                        }
+                        $target.html(successMsg);
                     }
                 },
                 error: function (response) {
