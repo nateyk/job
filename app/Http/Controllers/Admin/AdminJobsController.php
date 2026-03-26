@@ -92,7 +92,8 @@ class AdminJobsController extends AdminBaseController
             'gender' => false,
             'dob' => false,
             'country' => false,
-            'address' => false
+            'address' => false,
+            'work_experience' => false,
         ];
 
         foreach ($required_columns as $key => $value) {
@@ -221,7 +222,8 @@ class AdminJobsController extends AdminBaseController
             'gender' => false,
             'dob' => false,
             'country' => false,
-            'address' => false
+            'address' => false,
+            'work_experience' => false,
         ];
 
         foreach ($required_columns as $key => $value) {

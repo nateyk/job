@@ -88,6 +88,18 @@ class FrontJobApplication extends CoreRequest
             $rules = Arr::add($rules, 'address', 'required|string');
         }
 
+        // Work experience fields (enabled via admin -> job.required_columns['work_experience']).
+        if (!empty($requiredColumns['work_experience'])) {
+            $rules = Arr::add($rules, 'total_work_experience_years', 'required|numeric|min:0');
+            $rules = Arr::add($rules, 'employer_name', 'required|string|max:255');
+            $rules = Arr::add($rules, 'employer_address', 'required|string');
+            $rules = Arr::add($rules, 'job_position', 'required|string|max:255');
+            $rules = Arr::add($rules, 'employer_salary', 'required|numeric|min:0');
+            $rules = Arr::add($rules, 'supervisor_name', 'required|string|max:255');
+            $rules = Arr::add($rules, 'supervisor_mobile', 'required|string|max:50');
+            $rules = Arr::add($rules, 'expected_monthly_salary', 'required|numeric|min:0');
+        }
+
         $this->get('answer');
         if(!empty($this->get('answer')))
         {
@@ -109,6 +121,14 @@ class FrontJobApplication extends CoreRequest
             'dob.required' => 'Date of Birth field is required.',
             'country.min' => 'Please select country.',
             'address.required' => 'Address field is required.',
+            'total_work_experience_years.required' => 'Total Work Experience (in years) is required.',
+            'employer_name.required' => 'Most Recent / Current Employer name is required.',
+            'employer_address.required' => 'Employer address is required.',
+            'job_position.required' => 'Job position is required.',
+            'employer_salary.required' => 'Salary is required.',
+            'supervisor_name.required' => 'Immediate supervisor name is required.',
+            'supervisor_mobile.required' => 'Supervisor mobile number is required.',
+            'expected_monthly_salary.required' => 'Expected monthly salary is required.',
             'state.min' => 'Please select state.',
             'city.required' => 'Please enter city.',
             'email.unique' => 'You have already applied for this job with this email. Try different one.'

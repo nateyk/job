@@ -16,6 +16,7 @@
         'dob' => __('modules.front.dob'),
         'country' => __('modules.front.country'),
         'address' => __('app.address'),
+        'work_experience' => __('modules.jobs.workExperience'),
         ];
         $sectionVisibility = [
             'profile_image' => __('modules.jobs.profileImage'),

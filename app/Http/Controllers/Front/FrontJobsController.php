@@ -287,6 +287,16 @@ class FrontJobsController extends FrontBaseController
         $jobApplication->cover_letter = $request->cover_letter;
         $jobApplication->column_priority = 0;
 
+        // Optional applicant fields (enabled by admin job.required_columns['work_experience']).
+        $jobApplication->total_work_experience_years = $request->input('total_work_experience_years');
+        $jobApplication->employer_name = $request->input('employer_name');
+        $jobApplication->employer_address = $request->input('employer_address');
+        $jobApplication->job_position = $request->input('job_position');
+        $jobApplication->employer_salary = $request->input('employer_salary');
+        $jobApplication->supervisor_name = $request->input('supervisor_name');
+        $jobApplication->supervisor_mobile = $request->input('supervisor_mobile');
+        $jobApplication->expected_monthly_salary = $request->input('expected_monthly_salary');
+
         if ($request->hasFile('photo')) {
             $jobApplication->photo = Files::uploadLocalOrS3($request->photo, 'candidate-photos');
         }

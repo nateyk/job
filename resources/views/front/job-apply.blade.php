@@ -138,6 +138,86 @@
                         </div>
                     </div>
                 @endif
+
+                @if (!empty($job->required_columns['work_experience']))
+                    <div class="form-group mt-30">
+                        <label class="control-label">@lang('modules.jobs.workExperience')</label>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Total Work Experience (in years)</label>
+                                    <input class="form-control form-control-lg" type="number" min="0" step="0.1"
+                                           name="total_work_experience_years" placeholder="e.g., 2.5"
+                                           value="{{ old('total_work_experience_years') }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Expected Monthly Salary</label>
+                                    <input class="form-control form-control-lg" type="number" min="0" step="1"
+                                           name="expected_monthly_salary" placeholder="e.g., 5000"
+                                           value="{{ old('expected_monthly_salary') }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Organization Name</label>
+                                    <input class="form-control form-control-lg" type="text"
+                                           name="employer_name" placeholder="Organization name"
+                                           value="{{ old('employer_name') }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Job Position</label>
+                                    <input class="form-control form-control-lg" type="text"
+                                           name="job_position" placeholder="Job position"
+                                           value="{{ old('job_position') }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Salary</label>
+                                    <input class="form-control form-control-lg" type="number" min="0" step="1"
+                                           name="employer_salary" placeholder="Salary"
+                                           value="{{ old('employer_salary') }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Supervisor’s Mobile Number</label>
+                                    <input class="form-control form-control-lg" type="text"
+                                           name="supervisor_mobile" placeholder="Mobile number"
+                                           value="{{ old('supervisor_mobile') }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Immediate Supervisor’s Name</label>
+                                    <input class="form-control form-control-lg" type="text"
+                                           name="supervisor_name" placeholder="Supervisor name"
+                                           value="{{ old('supervisor_name') }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Address</label>
+                                    <textarea class="form-control form-control-lg" name="employer_address" rows="3"
+                                              placeholder="Employer address">{{ old('employer_address') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 @if($job->section_visibility['profile_image'] == 'yes')
                     <div class="form-group">
                         <h6>@lang('modules.front.photo')</h6>

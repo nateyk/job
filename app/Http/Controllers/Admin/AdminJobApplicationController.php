@@ -753,6 +753,7 @@ class AdminJobApplicationController extends AdminBaseController
         abort_if(!$this->user->cans('view_job_applications'), 403);
 
         $application = JobApplication::with([
+            'job',
             'job.location',
             'status',
             'evaluations.group',
@@ -776,10 +777,11 @@ class AdminJobApplicationController extends AdminBaseController
             $adminRoleName = $this->user->role->role->display_name;
         }
 
-        return view('admin.job-applications.print', [
+        return view('admin.job-applications.print_form', [
             'application' => $application,
             'answers' => $answers,
             'latestEval' => $latestEval,
+            'requiredColumns' => $application->job ? $application->job->required_columns : [],
             'user' => $this->user,
             'adminRoleName' => $adminRoleName,
             'global' => $this->global,

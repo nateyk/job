@@ -15,12 +15,14 @@
         'dob' => false,
         'country' => false,
         'address' => false,
+        'work_experience' => false,
     ];
     $requiredColumns = [
         'gender' => __('modules.front.gender'),
         'dob' => __('modules.front.dob'),
         'country' => __('modules.front.country'),
         'address' => __('app.address'),
+        'work_experience' => __('modules.jobs.workExperience'),
     ];
     $section_visibility = [
         'profile_image' => 'yes',
