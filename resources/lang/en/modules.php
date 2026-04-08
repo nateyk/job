@@ -74,7 +74,7 @@ return array (
   array (
     'jobOpenings' => 'Job Openings',
     'visitMainWebsite' => 'Visit Main Website',
-    'homeHeader' => 'Working at Froiden !',
+    'homeHeader' => 'Careers at Menkem PLC',
     'applyForJob' => 'Apply for this Job',
     'shareJob' => 'Share this job opening',
     'applicationForm' => 'Application Form',
@@ -88,7 +88,7 @@ return array (
     'coverLetter' => 'Cover Letter',
     'submitApplication' => 'Submit Application',
     'applySuccessMsg' => 'You have successfully applied for this position. We will get back to you very soon :)',
-    'jobOpeningHeading' => 'Working at Froiden !',
+    'jobOpeningHeading' => 'Careers at Menkem PLC',
     'jobOpeningText' => 'We want people to thrive at Froiden; <br>we believe you do your best work when you feel your best.',
     'questions' => 'Questions',
     'additionalDetails' => 'Additional Details',
