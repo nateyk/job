@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 use App\Notifications\NewJobApplication;
 use Laravel\Socialite\Facades\Socialite;
 use App\Http\Requests\FrontJobApplication;
@@ -278,8 +279,8 @@ class FrontJobsController extends FrontBaseController
             $countriesArray = json_decode(file_get_contents(public_path('country-state-city/countries.json')), true)['countries'];
             $statesArray = json_decode(file_get_contents(public_path('country-state-city/states.json')), true)['states'];
 
-            $jobApplication->country = $this->getName($countriesArray, $request->country);
-            $jobApplication->state = $this->getName($statesArray, $request->state);
+            $jobApplication->country = $this->getName($countriesArray, $request->country) ?: (string) $request->country;
+            $jobApplication->state = $this->getName($statesArray, $request->state) ?: (string) $request->state;
             $jobApplication->city = $request->city;
             $jobApplication->zip_code = $request->zip_code;
         }
@@ -287,15 +288,23 @@ class FrontJobsController extends FrontBaseController
         $jobApplication->cover_letter = $request->cover_letter;
         $jobApplication->column_priority = 0;
 
-        // Optional applicant fields (enabled by admin job.required_columns['work_experience']).
-        $jobApplication->total_work_experience_years = $request->input('total_work_experience_years');
-        $jobApplication->employer_name = $request->input('employer_name');
-        $jobApplication->employer_address = $request->input('employer_address');
-        $jobApplication->job_position = $request->input('job_position');
-        $jobApplication->employer_salary = $request->input('employer_salary');
-        $jobApplication->supervisor_name = $request->input('supervisor_name');
-        $jobApplication->supervisor_mobile = $request->input('supervisor_mobile');
-        $jobApplication->expected_monthly_salary = $request->input('expected_monthly_salary');
+        // Optional applicant fields can exist in code before DB migration is applied on all servers.
+        // Only assign these attributes when the corresponding columns actually exist.
+        $optionalWorkExperienceFields = [
+            'total_work_experience_years',
+            'employer_name',
+            'employer_address',
+            'job_position',
+            'employer_salary',
+            'supervisor_name',
+            'supervisor_mobile',
+            'expected_monthly_salary',
+        ];
+        foreach ($optionalWorkExperienceFields as $field) {
+            if (Schema::hasColumn($jobApplication->getTable(), $field)) {
+                $jobApplication->{$field} = $request->input($field);
+            }
+        }
 
         if ($request->hasFile('photo')) {
             $jobApplication->photo = Files::uploadLocalOrS3($request->photo, 'candidate-photos');
@@ -408,7 +417,8 @@ class FrontJobsController extends FrontBaseController
         $result = array_filter($arr, function ($value) use ($id) {
             return $value['id'] == $id;
         });
-        return current($result)['name'];
+        $first = current($result);
+        return isset($first['name']) ? $first['name'] : null;
     }
     
     public function changeLanguage($code)
