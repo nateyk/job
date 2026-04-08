@@ -84,27 +84,6 @@
             </a>
         </div>
         
-            
-
-        @if($global->front_language == 1)
-        <div class="topbar-right">
-            <div class="d-inline-flex ml-200 language-drop">
-
-                <div class="dropdown btn btn-default" style="margin-left: 390px;">
-                    <a href="#" class="dropdown-toggle text-capitalize" data-toggle="dropdown">
-                        <i class="flag-icon @if($language->language_code == 'en') flag-icon-us @else  flag-icon-{{ $language->language_code }} @endif"></i> {{$language->language_name}}
-                    </a>
-                    <div class="dropdown-menu" style="margin-left: 10px">
-                        
-                        @forelse ($languageSettings as $language)
-                            <a class="dropdown-item" data-lang-code="{{ $language->language_code }}" href="javascript:;"> <span class="flag-icon @if($language->language_code == 'en') flag-icon-us @elseif($language->language_code == 'ar') flag-icon-ae @elseif($language->language_code == 'es-ar') flag-icon-ar @else   flag-icon-{{ $language->language_code }} @endif"></span> {{ $language->language_name }}</a>
-                        @empty
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-        @endif
  @if($global->job_alert_status == 1)
     @if( isset($alertId) && !is_null($alertId))
         <div class="topbar-left">
