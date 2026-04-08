@@ -13,19 +13,7 @@
     {{-- @if($global->system_update == 1)
         @php($updateVersionInfo = \Froiden\Envato\Functions\EnvatoUpdate::updateVersionInfo())
         @if(isset($updateVersionInfo['lastVersion'])) --}}
-            <div class="row alert alert-info">
-
-                <div class="col-md-10">
-                    <i class="ti-gift"></i> @lang('modules.update.newUpdate')
-                    <label class="label label-success"></label>
-                </div>
-                <div class="col-md-2 pull-right">
-                    <a style="text-decoration: none" href="{{route('admin.update-application.index')}}"
-                       class="btn btn-success btn-sm ml">Update Now
-                        <i class="fa fa-arrow-right"></i>
-                    </a>
-                </div>
-            </div>
+            {{-- Update notification banner hidden --}}
          {{-- @endif
     @endif  --}}
     @if (!$user->mobile_verified && $smsSettings->nexmo_status == 'active')
