@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Job Application Evaluation</title>
     <style>
-        @page { size: A4 portrait; margin: 14mm 12mm; }
+        @page { size: A4 portrait; margin: 18mm 16mm; }
 
         * { box-sizing: border-box; }
 
@@ -176,7 +176,7 @@
                 margin: 0;
                 border: none;
                 border-radius: 0;
-                padding: 0;
+                padding: 6mm 2mm;
             }
 
             .print-bar {
