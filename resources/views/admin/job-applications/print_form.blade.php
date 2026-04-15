@@ -80,6 +80,12 @@
             margin-top: 18px;
         }
 
+        .section-box {
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 12px 14px;
+        }
+
         .section-title {
             margin: 0 0 10px;
             font-size: 15px;
@@ -139,6 +145,14 @@
             margin-top: 24px;
             border-top: 1px solid #e5e7eb;
             padding-top: 14px;
+        }
+
+        .notes-box {
+            margin-top: 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            min-height: 90px;
+            padding: 10px;
         }
 
         .signature-line {
@@ -226,60 +240,88 @@
 
     <section class="section">
         <h2 class="section-title">Applicant</h2>
-        <div class="field-grid">
-            <div class="label">Full Name</div>
-            <div class="value">{{ ucwords($application->full_name ?? '') }}</div>
+        <div class="section-box">
+            <div class="field-grid">
+                <div class="label">Full Name</div>
+                <div class="value">{{ ucwords($application->full_name ?? '') }}</div>
+            </div>
         </div>
     </section>
 
     <section class="section">
         <h2 class="section-title">Evaluation</h2>
         @if(isset($latestEval) && $latestEval && $latestEval->group)
-            <div class="field-grid">
-                <div class="label">Group</div>
-                <div class="value">{{ $latestEval->group->name }}</div>
-                <div class="label">Total Score</div>
-                <div class="value">{{ $latestEval->total_score }}/100</div>
-            </div>
+            <div class="section-box">
+                <div class="field-grid">
+                    <div class="label">Group</div>
+                    <div class="value">{{ $latestEval->group->name }}</div>
+                    <div class="label">Total Score</div>
+                    <div class="value">{{ $latestEval->total_score }}/100</div>
+                </div>
 
-            <table class="eval-table">
-                <thead>
-                <tr>
-                    <th style="width: 54%;">Criterion</th>
-                    <th style="width: 12%;" class="text-center">Weight</th>
-                    <th style="width: 14%;" class="text-center">Max Pts</th>
-                    <th style="width: 20%;" class="text-center">Score</th>
-                </tr>
-                </thead>
-                <tbody>
-                @forelse($latestEval->group->criteria as $criterion)
-                    @php
-                        $savedScore = $scoresByCriterionId[(int) $criterion->id] ?? null;
-                        $w = (int) $criterion->weight;
-                        $m = (int) $criterion->max_score;
-                        $maxPoints = $w > 0 ? min($w, max(1, $m)) : 0;
-                    @endphp
+                <table class="eval-table">
+                    <thead>
                     <tr>
-                        <td>{{ $criterion->name }}</td>
-                        <td class="text-center">{{ $criterion->weight }}%</td>
-                        <td class="text-center">{{ $maxPoints }}</td>
-                        <td class="text-center">{{ ($savedScore === null || $savedScore === '') ? '-' : $savedScore }}</td>
+                        <th style="width: 54%;">Criterion</th>
+                        <th style="width: 12%;" class="text-center">Weight</th>
+                        <th style="width: 14%;" class="text-center">Max Pts</th>
+                        <th style="width: 20%;" class="text-center">Score</th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="subtle text-center">No criteria configured.</td>
-                    </tr>
-                @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                    @forelse($latestEval->group->criteria as $criterion)
+                        @php
+                            $savedScore = $scoresByCriterionId[(int) $criterion->id] ?? null;
+                            $w = (int) $criterion->weight;
+                            $m = (int) $criterion->max_score;
+                            $maxPoints = $w > 0 ? min($w, max(1, $m)) : 0;
+                        @endphp
+                        <tr>
+                            <td>{{ $criterion->name }}</td>
+                            <td class="text-center">{{ $criterion->weight }}%</td>
+                            <td class="text-center">{{ $maxPoints }}</td>
+                            <td class="text-center">{{ ($savedScore === null || $savedScore === '') ? '-' : $savedScore }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="subtle text-center">No criteria configured.</td>
+                        </tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
         @else
-            <div class="subtle">No evaluation has been recorded yet.</div>
+            <div class="section-box">
+                <div class="field-grid">
+                    <div class="label">Group</div>
+                    <div class="value">Pending Evaluation</div>
+                    <div class="label">Total Score</div>
+                    <div class="value">-</div>
+                </div>
+
+                <table class="eval-table">
+                    <thead>
+                    <tr>
+                        <th style="width: 54%;">Criterion</th>
+                        <th style="width: 12%;" class="text-center">Weight</th>
+                        <th style="width: 14%;" class="text-center">Max Pts</th>
+                        <th style="width: 20%;" class="text-center">Score</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr><td>&nbsp;</td><td class="text-center">-</td><td class="text-center">-</td><td class="text-center">-</td></tr>
+                    <tr><td>&nbsp;</td><td class="text-center">-</td><td class="text-center">-</td><td class="text-center">-</td></tr>
+                    <tr><td>&nbsp;</td><td class="text-center">-</td><td class="text-center">-</td><td class="text-center">-</td></tr>
+                    </tbody>
+                </table>
+            </div>
         @endif
     </section>
 
     <section class="signature-wrap">
         <div><strong>Evaluator:</strong> {{ ucwords(optional($user)->name ?? '-') }}</div>
         <div><strong>Evaluator Role:</strong> {{ $adminRoleName ? $adminRoleName : '-' }}</div>
+        <div class="notes-box"><span class="subtle">Evaluator Notes</span></div>
         <div class="signature-line"></div>
         <div class="subtle">Signature</div>
     </section>
