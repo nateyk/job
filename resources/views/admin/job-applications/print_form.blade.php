@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Job Application Form</title>
+    <title>Job Application Evaluation</title>
     <style>
         @page { size: A4; margin: 10mm; }
         body {
@@ -126,11 +126,20 @@
     </script>
 </head>
 <body>
+@php
+    $scoresByCriterionId = [];
+    if (isset($latestEval) && $latestEval && !empty($latestEval->scores)) {
+        foreach ($latestEval->scores as $s) {
+            $scoresByCriterionId[(int) $s->evaluation_criterion_id] = $s->score;
+        }
+    }
+@endphp
 <div class="page">
     <div class="no-print">
         <button type="button" onclick="window.print()" class="btn">Print</button>
     </div>
 
+    @if(false)
     <div class="topbar">
         <div class="company">
             {{ $global->company_name ?? '' }}
@@ -359,17 +368,19 @@
     @empty
         <div class="field"><div class="subtle">No additional details.</div></div>
     @endforelse
+    @endif
+
+    <div class="title">Job Application Evaluation</div>
+    <div class="section-title">Applicant</div>
+    <div class="field">
+        <div class="field-row">
+            <div class="field-label">Full Name</div>
+            <div class="field-value">{{ ucwords($application->full_name ?? '') }}</div>
+        </div>
+    </div>
 
     @if(isset($latestEval) && $latestEval && $latestEval->group)
         <div class="section-title">Evaluation</div>
-        @php
-            $scoresByCriterionId = [];
-            if (!empty($latestEval->scores)) {
-                foreach ($latestEval->scores as $s) {
-                    $scoresByCriterionId[(int) $s->evaluation_criterion_id] = $s->score;
-                }
-            }
-        @endphp
 
         <div class="field" style="margin-top: 0;">
             <div class="field-row">
@@ -410,11 +421,14 @@
             @endforelse
             </tbody>
         </table>
+    @else
+        <div class="section-title">Evaluation</div>
+        <div class="field"><div class="subtle">No evaluation has been recorded yet.</div></div>
     @endif
 
     <div class="signature-wrap">
-        <div><strong>Signed by:</strong> {{ ucwords(optional($user)->name ?? '-') }}</div>
-        <div><strong>Role:</strong> {{ $adminRoleName ? $adminRoleName : '-' }}</div>
+        <div><strong>Evaluator:</strong> {{ ucwords(optional($user)->name ?? '-') }}</div>
+        <div><strong>Evaluator Role:</strong> {{ $adminRoleName ? $adminRoleName : '-' }}</div>
         <div class="signature-dash"></div>
         <div>Signature</div>
     </div>
