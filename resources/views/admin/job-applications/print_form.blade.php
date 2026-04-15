@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Job Application Evaluation</title>
     <style>
-        @page { size: A4; margin: 12mm; }
+        @page { size: A4 portrait; margin: 14mm 12mm; }
 
         * { box-sizing: border-box; }
 
         body {
             margin: 0;
-            font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             color: #111827;
-            background: #f3f4f6;
+            background: #ffffff;
             font-size: 13px;
             line-height: 1.45;
         }
@@ -28,12 +28,9 @@
 
         .page {
             width: 100%;
-            max-width: 820px;
-            margin: 18px auto;
+            margin: 0;
             background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 22px 24px 28px;
+            padding: 0;
         }
 
         .print-bar {
@@ -55,9 +52,9 @@
             justify-content: space-between;
             align-items: flex-start;
             gap: 16px;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 12px;
-            margin-bottom: 16px;
+            border-bottom: 1px solid #d1d5db;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
         }
 
         .company-name {
@@ -74,7 +71,7 @@
 
         .title {
             margin: 0;
-            font-size: 22px;
+            font-size: 26px;
             font-weight: 700;
             color: #0f172a;
         }
@@ -85,7 +82,7 @@
 
         .section-title {
             margin: 0 0 10px;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 700;
             color: #111827;
             text-transform: uppercase;
@@ -94,7 +91,7 @@
 
         .field-grid {
             display: grid;
-            grid-template-columns: 170px 1fr;
+            grid-template-columns: 190px 1fr;
             gap: 8px 12px;
             align-items: center;
         }
@@ -106,8 +103,8 @@
 
         .value {
             border-bottom: 1px solid #d1d5db;
-            min-height: 24px;
-            padding: 2px 0;
+            min-height: 28px;
+            padding: 4px 0;
             color: #111827;
         }
 
@@ -119,13 +116,13 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 8px;
-            font-size: 12px;
+            font-size: 13px;
         }
 
         .eval-table th,
         .eval-table td {
             border: 1px solid #d1d5db;
-            padding: 7px 8px;
+            padding: 8px 10px;
             vertical-align: top;
         }
 
@@ -154,7 +151,7 @@
         @media print {
             body {
                 background: #fff !important;
-                font-size: 11pt;
+                font-size: 12pt;
             }
 
             body > :not(.page) {
@@ -163,7 +160,6 @@
 
             .page {
                 margin: 0;
-                max-width: none;
                 border: none;
                 border-radius: 0;
                 padding: 0;
@@ -171,6 +167,28 @@
 
             .print-bar {
                 display: none !important;
+            }
+
+            .title {
+                font-size: 24pt;
+            }
+
+            .section-title {
+                font-size: 12pt;
+            }
+
+            .company-name,
+            .doc-meta {
+                font-size: 10.5pt;
+            }
+
+            .eval-table {
+                font-size: 11pt;
+            }
+
+            .eval-table th,
+            .eval-table td {
+                padding: 8px 10px;
             }
         }
     </style>
