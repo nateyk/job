@@ -38,6 +38,9 @@ class AdminApplicationStatusController extends AdminBaseController
 
             }
         })->first();
+        if (is_null($firstStatus)) {
+            $firstStatus = $statuses->first();
+        }
         return view('admin.job-applications.create-status', compact('statuses','firstStatus'));
     }
 

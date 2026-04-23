@@ -29,7 +29,11 @@
                 <div class="col-xs-12 col-md-6">
                     <label class="d-block control-label">@lang('modules.jobApplication.statusPosition')</label>
                     <select name="status_position" id="status_position" class="select2 form-control">
-                        <option value="0">{{'Before '.ucwords($firstStatus->status)}}</option>
+                        @if(!empty($firstStatus))
+                            <option value="0">{{ 'Before ' . ucwords($firstStatus->status) }}</option>
+                        @else
+                            <option value="0">First Status</option>
+                        @endif
                         @foreach ($statuses as $status)
                             <option value="{{$status->position}}">{{'After '.ucwords($status->status)}}</option>
                         @endforeach
